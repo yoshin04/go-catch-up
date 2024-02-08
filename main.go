@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"unsafe"
 )
 
 const secret = "abc"
@@ -32,5 +33,29 @@ func main() {
 
 	fmt.Printf("Mac:%v Windows:%v Linux:%v\n", Mac, Windows, Linux)
 
-	
+	var ui1 uint16
+	fmt.Printf("memory address of ui1: %p\n", &ui1)
+	var ui2 uint16
+	fmt.Printf("memory address of ui1: %p\n", &ui2)
+	var p1 *uint16
+	fmt.Printf("memory address of p1: %p\n", p1)
+	p1 = &ui1
+	fmt.Printf("memory address of pi: %p\n", &pi)
+	fmt.Printf("value of ui1(dereference): %v\n", *p1)
+
+	var pp1 **uint16 = &p1
+	fmt.Printf("value of pp1: %v\n", pp1)
+	fmt.Printf("value of pp1(dereference): %v\n", **pp1)
+	fmt.Printf("size of pp1: %d[bytes]\n", unsafe.Sizeof(pp1))
+
+	ok, result := true, "A"
+	if ok {
+		// result := "B" // 同じアドレスを参照せず、スコープ内のみ値が変わる
+		result = "B" // 同じアドレスを参照する
+		println(result)
+	} else {
+		result := "C"
+		println(result)
+	}
+	print(result)
 }
