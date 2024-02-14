@@ -1,79 +1,48 @@
 package main
 
-import (
-	"errors"
-	"fmt"
-	"os"
-	"strings"
-)
+import "fmt"
 
-func funcDefer() {
-	defer fmt.Println("main func final-finish")
-	defer fmt.Println("main func semi-finish")
-	fmt.Println("hello world")
+type controller interface {
+	speedUp() int
+	speedDown() int
 }
-func trimExtension(files ...string) []string {
-	out := make([]string, 0, len(files))
-	for _, f := range files {
-		out = append(out, strings.TrimSuffix(f, "csv"))
-	}
-	return out
+
+type vehicle struct {
+	speed       int
+	enginePower int
 }
-func fileChecker(name string) (string, error) {
-	f, err := os.Open(name)
-	if err != nil {
-		return "", errors.New("file not found")
-	}
-	defer f.Close()
-	return name, nil
+
+type bycycle struct {
+	speed      int
+	humanPower int
 }
-func addExt(f func(file string) string, name string) {
-	fmt.Println(f(name))
+
+func (v *vehicle) speedUp() int {
+	v.speed += 10 * v.enginePower
+	return v.speed
 }
-func multiply() func(int) int {
-	return func(n int) int {
-		return n * 1000
-	}
+
+func (v *vehicle) speedDown() int {
+	v.speed -= 5 * v.enginePower
+	return v.speed
 }
-func countUp() func(int) int {
-	count := 0
-	return func(n int) int {
-		count += n
-		return count
-	}
+
+func (v *bycycle) speedUp() int {
+	v.speed += 3 * v.humanPower
+	return v.speed
+}
+func (v *bycycle) speedDown() int {
+	v.speed -= 1 * v.humanPower
+	return v.speed
+}
+func speedUpAndDown(c controller) {
+	fmt.Printf("current speed: %v\n", c.speedUp())
+	fmt.Printf("current speed: %v\n", c.speedDown())
 }
 
 func main() {
-	funcDefer()
-	files := []string{"file1.csv", "file2.csv", "file3.csv"}
-	fmt.Println(trimExtension(files...))
-	name, err := fileChecker("file.text")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(name)
-
-	i := 1
-	func(i int) {
-		fmt.Println((i))
-	}(i)
-	f1 := func(i int) int {
-		return i + 1
-	}
-	fmt.Println(f1(i))
-
-	f2 := func(file string) string {
-		return file + ".csv"
-	}
-	addExt(f2, "file1")
-
-	f3 := multiply()
-	fmt.Println(f3(2))
-
-	f4 := countUp()
-	for i := 1; i <= 5; i++ {
-		v := f4(2)
-		fmt.Printf("%v\n", v)
-	}
+	v := &vehicle{0, 5}
+	speedUpAndDown(v)
+	b := &bycycle{0, 5}
+	speedUpAndDown(b)
 }
