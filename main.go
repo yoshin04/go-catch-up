@@ -1,8 +1,14 @@
 package main
 
-import (
-	"fmt"
-)
+func Add(x, y int) int {
+	return x + y
+}
+func Divide(x, y int) float32 {
+	if y == 0 {
+		return 0.
+	}
+	return float32(x) / float32(y)
+}
 
 type customConstraints interface {
 	~int | int16 | float32 | float64 | string
@@ -15,9 +21,6 @@ func add[T customConstraints](x, y T) T {
 }
 
 func main() {
-	fmt.Printf("%v\n", add(1, 2))
-	fmt.Printf("%v\n", add(1.1, 2.2))
-	fmt.Printf("%v\n", add("Hello, ", "World!"))
-	var i1, i2 NewInt = 3, 4
-	fmt.Printf("%v\n", add(i1, i2))
+	// x, y := 3, 5
+	// fmt.Printf("%v, %v\n", Add(x, y), Divide(x, y))
 }
