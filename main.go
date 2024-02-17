@@ -1,11 +1,16 @@
 package main
 
-import (
-	"errors"
-	"fmt"
-)
+func Add(x, y int) int {
+	return x + y
+}
+func Divide(x, y int) float32 {
+	if y == 0 {
+		return 0.
+	}
+	return float32(x) / float32(y)
+}
 
 func main() {
-	err01 := errors.New("something wrong")
-	fmt.Printf("%[1]p %[1]T %[1]v\n", err01)
+	// x, y := 3, 5
+	// fmt.Printf("%v, %v\n", Add(x, y), Divide(x, y))
 }
