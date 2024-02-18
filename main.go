@@ -1,26 +1,23 @@
 package main
 
-func Add(x, y int) int {
-	return x + y
-}
-func Divide(x, y int) float32 {
-	if y == 0 {
-		return 0.
-	}
-	return float32(x) / float32(y)
-}
-
-type customConstraints interface {
-	~int | int16 | float32 | float64 | string
-}
-
-type NewInt int
-
-func add[T customConstraints](x, y T) T {
-	return x + y
-}
+import (
+	"io"
+	"log"
+	"os"
+)
 
 func main() {
-	// x, y := 3, 5
-	// fmt.Printf("%v, %v\n", Add(x, y), Divide(x, y))
+	file, err := os.Create("log.txt")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer file.Close()
+	flags := log.Lshortfile
+	warnLogger := log.New(io.MultiWriter(file, os.Stderr), "WARNING: ", flags)
+	errorLogger := log.New(io.MultiWriter(file, os.Stderr), "ERROR: ", flags)
+
+	warnLogger.Println("warning a")
+	// ログを出力した後に強制終了
+	errorLogger.Fatalln("critical error")
 }
