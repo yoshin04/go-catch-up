@@ -1,31 +1,55 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 )
 
-const bufSize = 3
+const bufSIze = 5
 
 func main() {
+	ch1 := make(chan int, bufSIze)
+	ch2 := make(chan int, bufSIze)
 	var wg sync.WaitGroup
-	ch := make(chan string, bufSize)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 5; i++ {
-			time.Sleep(1000 * time.Millisecond)
-			ch <- "hello"
-		}
-	}()
-	for i := 0; i < 3; i++ {
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+	wg.Add(3)
+	go countProducer(&wg, ch1, bufSIze, 50)
+	go countProducer(&wg, ch2, bufSIze, 500)
+	go countConsumer(ctx, &wg, ch1, ch2)
+	wg.Wait()
+	fmt.Println("finish")
+}
+func countProducer(wg *sync.WaitGroup, ch chan<- int, size int, sleep int) {
+	defer wg.Done()
+	defer close(ch)
+	for i := 0; i < size; i++ {
+		time.Sleep(time.Duration(sleep) * time.Millisecond)
+		ch <- i
+	}
+}
+func countConsumer(ctx context.Context, wg *sync.WaitGroup, ch1 <-chan int, ch2 <-chan int) {
+	defer wg.Done()
+loop:
+	for ch1 != nil || ch2 != nil {
 		select {
-		case m := <-ch:
-			fmt.Println(m)
-		default:
-			fmt.Println("no msg arrived")
+		case <-ctx.Done():
+			fmt.Println(ctx.Err())
+			break loop
+		case v, ok := <-ch1:
+			if !ok {
+				ch1 = nil
+				break
+			}
+			fmt.Printf("ch1 %v\n", v)
+		case v, ok := <-ch2:
+			if !ok {
+				ch2 = nil
+				break
+			}
+			fmt.Printf("ch2 %v\n", v)
 		}
-		time.Sleep(1500 * time.Millisecond)
 	}
 }
