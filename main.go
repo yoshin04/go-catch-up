@@ -1,55 +1,58 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-const bufSIze = 5
-
 func main() {
-	ch1 := make(chan int, bufSIze)
-	ch2 := make(chan int, bufSIze)
+	// var wg sync.WaitGroup
+	// var rwMu sync.RWMutex
+	// var c int
+
+	// wg.Add(3)
+	// go write(&rwMu, &wg, &c)
+	// go read(&rwMu, &wg, &c)
+	// go read(&rwMu, &wg, &c)
+	// go read(&rwMu, &wg, &c)
+
+	// wg.Wait()
+	// fmt.Println("finish")
+
 	var wg sync.WaitGroup
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
-	defer cancel()
-	wg.Add(3)
-	go countProducer(&wg, ch1, bufSIze, 50)
-	go countProducer(&wg, ch2, bufSIze, 500)
-	go countConsumer(ctx, &wg, ch1, ch2)
+	var c int64
+
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 10; j++ {
+				atomic.AddInt64(&c, 1)
+			}
+		}()
+	}
 	wg.Wait()
+	fmt.Println(c)
 	fmt.Println("finish")
 }
-func countProducer(wg *sync.WaitGroup, ch chan<- int, size int, sleep int) {
+func read(mu *sync.RWMutex, wg *sync.WaitGroup, c *int) {
 	defer wg.Done()
-	defer close(ch)
-	for i := 0; i < size; i++ {
-		time.Sleep(time.Duration(sleep) * time.Millisecond)
-		ch <- i
-	}
+	time.Sleep(10 * time.Millisecond)
+	mu.RLock()
+	defer mu.RUnlock()
+	fmt.Println("read lock")
+	fmt.Println(*c)
+	time.Sleep(10 * time.Millisecond)
+	fmt.Println("read unlock")
 }
-func countConsumer(ctx context.Context, wg *sync.WaitGroup, ch1 <-chan int, ch2 <-chan int) {
+func write(mu *sync.RWMutex, wg *sync.WaitGroup, c *int) {
 	defer wg.Done()
-loop:
-	for ch1 != nil || ch2 != nil {
-		select {
-		case <-ctx.Done():
-			fmt.Println(ctx.Err())
-			break loop
-		case v, ok := <-ch1:
-			if !ok {
-				ch1 = nil
-				break
-			}
-			fmt.Printf("ch1 %v\n", v)
-		case v, ok := <-ch2:
-			if !ok {
-				ch2 = nil
-				break
-			}
-			fmt.Printf("ch2 %v\n", v)
-		}
-	}
+	mu.Lock()
+	defer mu.Unlock()
+	fmt.Println("write lock")
+	*c += 1
+	time.Sleep(1 * time.Second)
+	fmt.Println("write unlock")
 }
