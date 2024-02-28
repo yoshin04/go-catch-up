@@ -1,58 +1,73 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"sync"
-	"sync/atomic"
 	"time"
 )
 
 func main() {
-	// var wg sync.WaitGroup
-	// var rwMu sync.RWMutex
-	// var c int
-
-	// wg.Add(3)
-	// go write(&rwMu, &wg, &c)
-	// go read(&rwMu, &wg, &c)
-	// go read(&rwMu, &wg, &c)
-	// go read(&rwMu, &wg, &c)
-
-	// wg.Wait()
-	// fmt.Println("finish")
-
-	var wg sync.WaitGroup
-	var c int64
-
-	for i := 0; i < 5; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for j := 0; j < 10; j++ {
-				atomic.AddInt64(&c, 1)
-			}
-		}()
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(20*time.Millisecond))
+	defer cancel()
+	ch := subTask(ctx)
+	v, ok := <-ch
+	if ok {
+		fmt.Println(v)
 	}
-	wg.Wait()
-	fmt.Println(c)
 	fmt.Println("finish")
 }
-func read(mu *sync.RWMutex, wg *sync.WaitGroup, c *int) {
-	defer wg.Done()
-	time.Sleep(10 * time.Millisecond)
-	mu.RLock()
-	defer mu.RUnlock()
-	fmt.Println("read lock")
-	fmt.Println(*c)
-	time.Sleep(10 * time.Millisecond)
-	fmt.Println("read unlock")
+func subTask(ctx context.Context) <-chan string {
+	ch := make(chan string)
+	go func() {
+		defer close(ch)
+		deadline, ok := ctx.Deadline()
+		if ok {
+			if deadline.Sub(time.Now().Add(30*time.Millisecond)) < 0 {
+				fmt.Println("impossible to meet deadline")
+				return
+			}
+		}
+		time.Sleep(30 * time.Millisecond)
+		ch <- "hello"
+	}()
+	return ch
 }
-func write(mu *sync.RWMutex, wg *sync.WaitGroup, c *int) {
-	defer wg.Done()
-	mu.Lock()
-	defer mu.Unlock()
-	fmt.Println("write lock")
-	*c += 1
-	time.Sleep(1 * time.Second)
-	fmt.Println("write unlock")
-}
+
+// func criticalTask(ctx context.Context) (string, error) {
+// 	ctx, cancel := context.WithTimeout(ctx, 1200*time.Millisecond)
+// 	defer cancel()
+// 	t := time.NewTicker(1000 * time.Millisecond)
+// 	select {
+// 	case <-ctx.Done():
+// 		return "", ctx.Err()
+// 	case <-t.C:
+// 		t.Stop()
+// 	}
+// 	return "A", nil
+// }
+// func normalTask(ctx context.Context) (string, error) {
+// 	t := time.NewTicker(3000 * time.Millisecond)
+// 	select {
+// 	case <-ctx.Done():
+// 		return "", ctx.Err()
+// 	case <-t.C:
+// 		t.Stop()
+// 	}
+// 	return "B", nil
+// }
+
+// func subTask(ctx context.Context, wg *sync.WaitGroup, id string) {
+// 	defer wg.Done()
+// 	t := time.NewTicker(500 * time.Millisecond)
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			fmt.Println(ctx.Err())
+// 			return
+// 		case <-t.C:
+// 			t.Stop()
+// 			fmt.Println(id)
+// 			return
+// 		}
+// 	}
+// }
